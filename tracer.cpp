@@ -21,11 +21,11 @@
 #include <iostream>
 
 class Player {
-	const int FOV = 60; //The player's field of view.
+	//const int FOV = 60; //The player's field of view. TODO: 
 	const int Height = 32; //Height of player in units.
 
 public:
-	double x = 22, y = 12; //Coordinate position of where the player is. Magic starting values.
+	double x = 13, y = 0; //Coordinate position of where the player is. Magic starting values.
 	double dirX = -1, dirY = 0; //Direction vector of player.
 } player;
 
@@ -50,7 +50,7 @@ public:
 
 	double perpWallDist; //Will be used to calculate the length of the ray.
 
-	bool stepX, stepY; //What direction to step in, either 0 or 1.
+	short stepX, stepY; //What direction to step in, either 0 or 1.
 
 	bool hit; //Has this hit a wall?
 	bool side; //Type of the hit? NS - EW?
@@ -58,8 +58,8 @@ public:
 
 double oldTime, newTime;
 
-const int mapWidth = 24;
-const int mapHeight = 24;
+const int mapWidth = 6;
+const int mapHeight = 6;
 
 const int windowWidth = 800;
 const int windowHeight = 600;
@@ -72,38 +72,34 @@ const int windowHeight = 600;
 
 int map[mapWidth][mapHeight] = 
 {
-  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,2,2,2,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1},
-  {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1},
-  {1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,2,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,0,0,0,5,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+  {1,1,1,1,1,1},
+  {1,0,0,0,0,1},
+  {1,0,0,0,0,1},
+  {1,0,0,0,0,1},
+  {1,0,0,0,0,1},
+  {1,1,1,1,1,1},
 };
+
+// debug ... Debug information about the stuff.
+void debug() {
+	std::cout << "Player-x: " << player.x << std::endl;
+	std::cout << "Player-x Dir: " << player.dirX << std::endl;
+}
 
 int main() {
 	//Create the window!
 	sf::RenderWindow window(sf::VideoMode(windowWidth, windowHeight), "Ray Casting!");
 
+	//Set window active for rendering
+	window.setActive();
+
+	sf::Clock deltaClock;
+
 	//Loop for event handling
 	while (window.isOpen()) {
+
+		//debug();
+
 		//Create event type event.
 		sf::Event event;
 		while(window.pollEvent(event)) {
@@ -111,68 +107,131 @@ int main() {
 				window.close();
 			}
 		}
-	}
 
-	//For every vertical stripe.
-	for (int x = 0; x < windowWidth; x++) {
-		/* Calculate ray position and direction */
-		cam.x = 2 * x / double(windowWidth) - 1; //Current camera coordinate from the pixel coordinate.
-		
-		//Set ray position to current player position.
-		ray.x = player.x;
-		ray.y = player.y;
+		//For every vertical stripe.
+		for (int x = 0; x < windowWidth; x++) {
+			/* Calculate ray position and direction */
+			cam.x = 2 * x / double(windowWidth) - 1; //Current camera coordinate from the pixel coordinate.
+			
+			//Set ray position to current player position.
+			ray.x = player.x;
+			ray.y = player.y;
 
-		ray.dirX = player.dirX + cam.planeX * cam.x;
-		ray.dirY = player.dirY + cam.planeY * cam.x;
+			ray.dirX = player.dirX + cam.planeX * cam.x;
+			ray.dirY = player.dirY + cam.planeY * cam.x;
 
-		/* Where the ray actually is map wise. */
-		ray.mapX = int(ray.x);
-		ray.mapY = int(ray.y);
+			/* Where the ray actually is map wise. */
+			ray.mapX = int(ray.x);
+			ray.mapY = int(ray.y);
 
-		ray.deltaDistX = sqrt(1 + pow(ray.dirY, 2) / pow(ray.dirX, 2));
-		ray.deltaDistY = sqrt(1 + pow(ray.dirX, 2) / pow(ray.dirY, 2));
+			ray.deltaDistX = sqrt(1 + pow(ray.dirY, 2) / pow(ray.dirX, 2));
+			ray.deltaDistY = sqrt(1 + pow(ray.dirX, 2) / pow(ray.dirY, 2));
 
-		if (ray.dirX < 0) {
-			ray.stepX = false;
-			ray.sideDistX = (ray.x - ray.mapX) * ray.deltaDistX;
-		} else {
-			ray.stepX = true;
-			ray.sideDistX = (ray.mapX + 1 - ray.x) * ray.deltaDistX;
-		}
-
-		if (ray.dirY < 0) {
-			ray.stepY = false;
-			ray.sideDistY = (ray.y - ray.mapY) * ray.deltaDistY;
-		} else {
-			ray.stepY = true;
-			ray.sideDistY = (ray.mapY + 1 - ray.y) * ray.deltaDistY;
-		}
-
-		/* Digital Differential Analyzer (DDA) Alg! */
-		while(!ray.hit) {
-			if (ray.sideDistX < ray.sideDistY) {
-				ray.sideDistX += ray.deltaDistX;
-				ray.mapX += ray.stepX;
-				ray.side = 0;
+			if (ray.dirX < 0) {
+				ray.stepX = -1;
+				ray.sideDistX = (ray.x - ray.mapX) * ray.deltaDistX;
 			} else {
-				ray.sideDistY += ray.deltaDistY;
-				ray.mapY += ray.stepY;
-				ray.side = 1;
+				ray.stepX = 1;
+				ray.sideDistX = (ray.mapX + 1 - ray.x) * ray.deltaDistX;
 			}
 
-			//Has the ray hit a wall?
-			if (map[ray.mapX][ray.mapY] > 0) {
-				ray.hit = 1;
+			if (ray.dirY < 0) {
+				ray.stepY = -1;
+				ray.sideDistY = (ray.y - ray.mapY) * ray.deltaDistY;
+			} else {
+				ray.stepY = 1;
+				ray.sideDistY = (ray.mapY + 1 - ray.y) * ray.deltaDistY;
 			}
+
+			/* Digital Differential Analyzer (DDA) Alg! */
+			while(!ray.hit) {
+				if (ray.sideDistX < ray.sideDistY) {
+					ray.sideDistX += ray.deltaDistX;
+					ray.mapX += ray.stepX;
+					ray.side = 0;
+				} else {
+					ray.sideDistY += ray.deltaDistY;
+					ray.mapY += ray.stepY;
+					ray.side = 1;
+				}
+
+				//Has the ray hit a wall?
+				if (map[ray.mapX][ray.mapY] > 0) {
+					ray.hit = true;
+				}
+			}
+
+			//Calculate the ray distance projected on to the cameras direction. 
+			if (!ray.side) {
+				ray.perpWallDist = (ray.mapX - ray.x + (1 - ray.stepX) / 2) / ray.dirX;
+			} else {
+				ray.perpWallDist = (ray.mapY - ray.y + (1 - ray.stepY) / 2) / ray.dirY;
+			}
+
+			/* Calculate the drawing height for the walls */
+			int lineHeight = (int)(windowHeight / ray.perpWallDist);
+
+			//Calculate lowest and highest pixel to fill in collumn.
+			int drawStart = -lineHeight / 2 + windowHeight / 2;
+
+			//Cap to 0.
+			if (drawStart < 0) {
+				drawStart = 0;
+			}
+
+			int drawEnd = lineHeight / 2 + windowHeight / 2;
+
+			//Cap top height - 1.
+			if (drawEnd >= windowHeight) {
+				drawEnd = windowHeight - 1;
+			}
+
+			sf::Color color(0, 0, 0);
+
+			/* Color the walls depending on type. */
+			switch(map[ray.mapX][ray.mapY]) {
+				case 1:
+					color = sf::Color::White;
+					break;
+				case 2:
+					color = sf::Color::Green;
+					break;
+				case 3:
+					color = sf::Color::Blue;
+					break;
+				case 4:
+					color = sf::Color::White;
+					break;
+				case 0:
+					color = sf::Color::White;
+					break;
+			}
+
+			if (ray.side) {
+				color.r /= 2;
+				color.g /= 2;
+				color.b /= 2;
+			}
+
+			/* Actually Rendering */
+			sf::VertexArray lines(sf::LineStrip, 2);
+			lines[0].position = sf::Vector2f(x, drawStart);
+			lines[0].color = color;
+
+			lines[1].position = sf::Vector2f(x, drawEnd);
+			lines[1].color = color;
+
+			window.draw(lines);
 		}
 
-		/* Calculate the ray distance projected on to the cameras direction. */
-		if (!ray.side) {
-			ray.perpWallDist = (ray.mapX - ray.x + (1 - ray.stepX) / 2) / ray.dirX;
-		} else {
-			ray.perpWallDist = (ray.mapY - ray.y + (1  - ray.stepY) / 2) / ray.dirY;
-		}
+		window.display();
+		window.clear();
 
+		sf::Time dt = deltaClock.restart();
+
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
+			player.dirX += 10 * dt.asSeconds() / 100;
+		}
 	}
 
 	return 0;
